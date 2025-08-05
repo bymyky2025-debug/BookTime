@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Időpontfoglalás</title>
+  <link rel="stylesheet" href="css/Full.css" />
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    (function () {
+      emailjs.init("Pi8bBAb-9NUxOTkF1");
+    })();
+  </script>
+</head>
+<body>
+  <header>
+    <h2>🗓️ Időpontfoglalás</h2>
+<h2>15 perces ingyenes konzultáció</h2>
+    <div class="weekNav">
+      <button id="prevWeek"> <  Előző hét</button>
+      <div id="currentWeekLabel">Betöltés...</div>
+      <button id="nextWeek">Következő hét  > </button>
+    </div>
+  </header>
+
+  <main>
+    <div id="calendarGrid"></div>
+  </main>
+
+<!-- Portál -->
+<div id="portal" class="portalOverlay" style="display: none;">
+  <div class="dialogBox" id="addEventDialogBox">
+    <span class="close-btn" onclick="closePortal()">×</span>
+    <h3>Foglalás:</h3>
+    <form id="addEventForm">
+      <label>Név: <input type="text" name="contactName" required /></label>
+      <label>Email: <input type="email" name="contactEmail" required /></label>
+      <label>Telefon: <input type="tel" name="contactTel" required /></label>
+      <button type="submit">Foglalás elküldése</button>
+    </form>
+  </div>
+</div>
+
+  <script src="index.js"></script>
+ 
+</body>
+</html>
