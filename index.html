@@ -1,48 +1,54 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Időpontfoglalás</title>
-  <link rel="stylesheet" href="Full.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Időpontfoglalás</title>
+
+    <link rel="stylesheet" href="Full.css" />
+
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <script>
-    (function () {
-      emailjs.init("Pi8bBAb-9NUxOTkF1");
-    })();
-  </script>
+    <script>
+        (function () {
+            emailjs.init("Pi8bBAb-9NUxOTkF1");
+        })();
+    </script>
 </head>
 <body>
-  <header>
-    <h2>🗓️ Időpontfoglalás</h2>
-<h2>15 perces ingyenes konzultáció</h2>
-    <div class="weekNav">
-      <button id="prevWeek"> <  Előző hét</button>
-      <div id="currentWeekLabel">Betöltés...</div>
-      <button id="nextWeek">Következő hét  > </button>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button id="prevWeek">←</button>
+            <span id="currentWeekLabel">Hét betöltése...</span>
+            <button id="nextWeek">→</button>
+        </div>
+
+        <div id="calendarGrid"></div>
     </div>
-  </header>
 
-  <main>
-    <div id="calendarGrid"></div>
-  </main>
+    <div id="portal" style="display:none">
+        <div>
+            <div class="dialogBox" id="addEventDialogBox" style="display:none">
+                <button onclick="closePortal()">×</button>
+                <h3>Időpont lefoglalása</h3>
 
-<!-- Portál -->
-<div id="portal" class="portalOverlay" style="display: none;">
-  <div class="dialogBox" id="addEventDialogBox">
-    <span class="close-btn" onclick="closePortal()">×</span>
-    <h3>Foglalás:</h3>
-    <form id="addEventForm">
-      <label>Név: <input type="text" name="contactName" required /></label>
-      <label>Email: <input type="email" name="contactEmail" required /></label>
-      <label>Telefon: <input type="tel" name="contactTel" required /></label>
-      <button type="submit">Foglalás elküldése</button>
-    </form>
-  </div>
-</div>
+                <p id="selectedAppointment"></p>
 
-  <script src="index.js"></script>
- 
+                <form id="addEventForm" autocomplete="off">
+                    <label for="contactName">Név:</label>
+                    <input type="text" name="contactName" id="contactName" required />
+
+                    <label for="contactEmail">E‑mail:</label>
+                    <input type="email" name="contactEmail" id="contactEmail" required />
+
+                    <label for="contactTel">Telefonszám:</label>
+                    <input type="tel" name="contactTel" id="contactTel" required />
+
+                    <input type="submit" value="Foglalás küldése" />
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="index.js"></script>
 </body>
 </html>
-
