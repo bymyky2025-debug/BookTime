@@ -1,8 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const { Pool } = require('pg');
 const path = require('path');
+const { Pool } = require('pg');
 
 const app = express();
 const port = 3000;
@@ -14,26 +14,26 @@ const pool = new Pool({
       rejectUnauthorized: false
   }
 });
-});
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(__dirname));
 
-// API – foglalások lekérdezése
-app.get('/bookings', async (req, res) => {
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/api/bookings', async (req, res) => {
   try {
-    const result = await pool.query('SELECT appointment_date, appointment_time FROM bookings');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Hiba a lekérdezés során:', err);
-    res.status(500).json({ message: 'Adatbázis hiba a lekérdezésnél' });
+    const { rows } = await pool.query('SELECT * FROM bookings ORDER BY appointment_date, appointment_time');
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Hiba a foglalások lekérdezésekor:', error);
+    res.status(500).json({ error: 'Szerverhiba' });
   }
 });
 
-// API – foglalás mentése
-app.post('/book', async (req, res) => {
+app.post('/api/bookings', async (req, res) => {
   const { contactName, contactEmail, contactTel, appointmentDate, appointmentTime } = req.body;
 
   if (!contactName || !contactEmail || !contactTel || !appointmentDate || !appointmentTime) {
@@ -41,20 +41,20 @@ app.post('/book', async (req, res) => {
   }
 
   try {
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO bookings (contact_name, contact_email, contact_tel, appointment_date, appointment_time)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
       [contactName, contactEmail, contactTel, appointmentDate, appointmentTime]
     );
-    res.status(200).json({ message: 'Foglalás sikeresen elmentve az adatbázisba.' });
-  } catch (err) {
-    console.error('DB hiba:', err);
-    res.status(500).json({ message: 'Adatbázis hiba.' });
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Hiba az új foglalás létrehozásakor:', error);
+    res.status(500).json({ error: 'Szerverhiba' });
   }
 });
 
-// Indítás
 app.listen(port, () => {
-  console.log(`✅ Szerver fut: http://localhost:${port}`);
+  console.log(`A szerver fut a http://localhost:${port} címen`);
 });
-
