@@ -9,11 +9,11 @@ const port = 3000;
 
 // PostgreSQL kapcsolat
 const pool = new Pool({
-  user: 'openpg',
-  host: 'localhost',
-  database: 'Tourbooking',
-  password: 'openpgpwd',
-  port: 5432,
+  connectionString: process.env.DATABASE_URL,
+  ssl:postgresql://booktime_user:DNfK97CGxwvmFEFn5FtAZM9nqOsutVuf@dpg-d2925lpr0fns73evikc0-a/booktime {
+      rejectUnauthorized: false
+  }
+});
 });
 
 // Middleware
