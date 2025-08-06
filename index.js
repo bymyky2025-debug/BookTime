@@ -1,236 +1,164 @@
 // 📅 DÁTUMKEZELÉS
 const calendarGrid = document.getElementById("calendarGrid");
 const currentWeekLabel = document.getElementById("currentWeekLabel");
+const prevWeekBtn = document.getElementById("prevWeek");
+const nextWeekBtn = document.getElementById("nextWeek");
+const portal = document.getElementById("portal");
+const addEventDialogBox = document.getElementById("addEventDialogBox");
+const addEventForm = document.getElementById("addEventForm");
+let selectedSlot = null;
 
 let currentMonday = getMonday(new Date());
 
 function getMonday(date) {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // hétfő
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(d.setDate(diff));
 }
 
 function formatDate(date) {
-  return date.toISOString().split("T")[0];
+  const d = new Date(date);
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
 }
 
 // 📆 HETI NAPTÁR KIRAJZOLÁS
 async function renderWeek(startDate) {
   calendarGrid.innerHTML = "";
-
   const days = ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"];
-  const weekDates = [];
+  const timeSlots = ["10:00", "10:15", "10:30", "10:45", "11:00", "11:15", "11:30", "11:45", "12:00", "12:15", "12:30", "12:45", "13:00", "13:15", "13:30", "13:45", "16:00", "16:15", "16:30", "16:45", "17:00", "17:15", "17:30", "17:45"];
+
+  const bookedSlots = await fetchBookedSlots();
 
   for (let i = 0; i < 5; i++) {
     const dayDate = new Date(startDate);
     dayDate.setDate(startDate.getDate() + i);
-    weekDates.push(dayDate);
+    const dayFormattedDate = formatDate(dayDate);
+
+    const dayColumn = document.createElement("div");
+    dayColumn.classList.add("day");
+
+    const dayNameEl = document.createElement("div");
+    dayNameEl.classList.add("dayName");
+    dayNameEl.textContent = days[i];
+    dayColumn.appendChild(dayNameEl);
+
+    timeSlots.forEach(time => {
+      const timeSlotEl = document.createElement("div");
+      timeSlotEl.classList.add("time-slot");
+      timeSlotEl.dataset.date = dayFormattedDate;
+      timeSlotEl.dataset.time = time;
+
+      const isBooked = bookedSlots.some(booked => 
+          formatDate(booked.appointment_date) === dayFormattedDate && 
+          booked.appointment_time === time
+      );
+
+      if (isBooked) {
+          timeSlotEl.classList.add("booked");
+          timeSlotEl.textContent = "Foglalt";
+      } else {
+          timeSlotEl.classList.add("available");
+          timeSlotEl.textContent = time;
+          timeSlotEl.addEventListener("click", () => {
+              openPortal();
+              selectedSlot = timeSlotEl;
+              document.getElementById('selectedAppointment').textContent = `${dayFormattedDate} ${time}`;
+          });
+      }
+
+      dayColumn.appendChild(timeSlotEl);
+    });
+
+    calendarGrid.appendChild(dayColumn);
   }
 
-  const startLabel = weekDates[0].toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
-  const endLabel = weekDates[4].toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
-  currentWeekLabel.textContent = `${weekDates[0].getFullYear()}. ${startLabel} – ${endLabel}`;
+  const startLabel = startDate.toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 4);
+  const endLabel = endDate.toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
+  currentWeekLabel.textContent = `${startDate.getFullYear()}. ${startLabel} – ${endLabel}`;
+}
 
-  // Lekérdezzük a foglalásokat a szerverről
-  let bookings = [];
+// 🌐 A FOGLALÁSOK LEKÉRÉSE A SZERVERRŐL
+async function fetchBookedSlots() {
   try {
-    const res = await fetch("https://booktime-q4q9.onrender.com");
-    bookings = await res.json();
-  } catch (err) {
-    console.error("Nem sikerült lekérni a foglalásokat:", err);
+    // ITT A VÁLTOZÁS: relatív URL-t használunk
+    const response = await fetch('/api/bookings');
+    if (!response.ok) {
+        throw new Error('Hiba a foglalások lekérésekor.');
+    }
+    const bookings = await response.json();
+    return bookings;
+  } catch (error) {
+    console.error("❌ Hiba a foglalások lekérésekor:", error);
+    return [];
   }
-
-  for (let i = 0; i < 5; i++) {
-    const dayName = days[i];
-    const date = weekDates[i];
-    const dateStr = formatDate(date);
-
-    const dayDiv = document.createElement("div");
-    dayDiv.classList.add("day");
-    dayDiv.dataset.date = dateStr;
-
-    dayDiv.innerHTML = `
-      <div class="dayName">
-        <span>${dayName}</span><br>
-        <span class="date">${dateStr}</span>
-      </div>
-      <div class="dayEvents">
-        ${generateTimeSlots(dateStr, bookings)}
-      </div>
-    `;
-    calendarGrid.appendChild(dayDiv);
-  }
-
-  attachTimeSlotEvents();
 }
-
-
-// 🪟 FOGALALÁSI PORTÁL MEGNYITÁSA
-function openPortal(date, time, slotElement) {
-  selectedDateStr = date;
-  selectedTimeStr = time;
-  selectedSlot = slotElement;
-
-  document.getElementById("portal").style.display = "block";
-  document.getElementById("addEventDialogBox").style.display = "block";
-
-  const h3 = document.querySelector("#addEventDialogBox h3");
-  if (h3) {
-    h3.textContent = `Foglalás: ${date}, ${time}`;
-  }
-
-  document.getElementById("addEventForm").reset();
-}
-
-function generateTimeSlots(dateStr, bookings = []) {
-  const slots = [
-    "10:00–10:15", "10:30–10:45",
-    "11:00–11:15", "11:30–11:45",
-    "12:00–12:15", "12:30–12:45",
-    "13:00–13:15", "13:30–13:45",
-    "16:00–16:15", "16:30–16:45",
-    "18:00–18:15", "18:30–18:45",
-  ];
-
-  return slots.map(slot => {
-    const isBooked = bookings.some(b => {
-      const dbDate = new Date(b.appointment_date);
-      const localDateStr = dbDate.getFullYear() + '-' +
-        String(dbDate.getMonth() + 1).padStart(2, '0') + '-' +
-        String(dbDate.getDate()).padStart(2, '0');
-
-      return localDateStr === dateStr && b.appointment_time.replace(/\s/g, '') === slot.replace(/\s/g, '');
-    });
-
-    return `<div class="dayTime ${isBooked ? 'booked' : ''}" data-date="${dateStr}" data-time="${slot}">
-      ${slot}
-    </div>`;
-  }).join("");
-}
-
-
-// 🎯 ESEMÉNYHOZZÁADÁS KEZELÉS
-function attachTimeSlotEvents() {
-  document.querySelectorAll(".dayTime").forEach(slot => {
-    slot.addEventListener("click", () => {
-      if (slot.classList.contains("booked")) return;
-
-      const selectedDate = slot.dataset.date;
-      const selectedTime = slot.dataset.time;
-
-      openPortal(selectedDate, selectedTime, slot);
-    });
-  });
-
-window.closePortal = function () {
-  document.getElementById("portal").style.display = "none";
-  document.getElementById("addEventDialogBox").style.display = "none";
-};
-
-
-}
-
-// 🪟 FOGALALÁSI PORTÁL MEGNYITÁSA
-// Globális változók (ezek legyenek felül is definiálva)
-let selectedDateStr = "";
-let selectedTimeStr = "";
-let selectedSlot = null;
-
-// Form küldése esemény
-document.getElementById("addEventForm").addEventListener("submit", function (e) {
-  e.preventDefault();
-
-
-
-  const name = e.target.elements.contactName.value.trim();
-  const email = e.target.elements.contactEmail.value.trim();
-  const tel = e.target.elements.contactTel.value.trim();
-
-  if (!name || !email || !tel) {
-    alert("Kérlek, minden mezőt tölts ki!");
-    return;
-  }
-
-  const templateParams = {
-    contactName: name,
-    contactEmail: email,
-    contactTel: tel,
-    contactMessage: `Időpont foglalás 15 perces konzultációra: ${selectedDateStr}, ${selectedTimeStr}`,
-    appointmentDate: selectedDateStr,
-    appointmentTime: selectedTimeStr
-  };
-
-  // Küldés EmailJS-sel
-  emailjs.send("service_0mkavr2", "template_oxjexwn", templateParams)
-    .then(function () {
-      // Email sikeres, DOM frissítése
-      selectedSlot.innerHTML = `
-        <div class="event">
-          <div class="eventTitle">${name}</div>
-          <div class="eventTime">${selectedTimeStr}</div>
-        </div>`;
-      selectedSlot.classList.add("booked");
-
-      // Mentés szerverre (PostgreSQL)
-      fetch("http://localhost:3000/book", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(templateParams)
-      })
-        .then(res => res.json())
-        .then(data => {
-          console.log("✅ Foglalás elmentve a szerveren:", data);
-        })
-        .catch(err => {
-          console.error("❌ Hiba a mentéskor:", err);
-        });
-
-      alert("Foglalás sikeresen elküldve!");
-      closePortal();
-    }, function (error) {
-      alert("Hiba történt a küldés során: " + error.text);
-    });
-}); // ← EZ A ZÁRÓZÁRÓJEL HIÁNYZOTT ‼️
-
-
 
 // ❌ PORTÁL BEZÁRÁS
 function closePortal() {
-  document.getElementById("portal").style.display = "none";
-  document.getElementById("addEventDialogBox").style.display = "none";
+  portal.style.display = "none";
+  addEventDialogBox.style.display = "none";
+  addEventForm.reset();
+  selectedSlot = null;
 }
 
+// ✅ PORTÁL MEGYNYITÁS
+function openPortal() {
+  portal.style.display = "flex";
+  addEventDialogBox.style.display = "block";
+}
+
+// 📨 FOGLALÁS ELKÜLDÉSE A SZERVERRE
+addEventForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!selectedSlot) return;
+
+  const appointmentDate = selectedSlot.dataset.date;
+  const appointmentTime = selectedSlot.dataset.time;
+
+  const bookingData = {
+    contactName: document.getElementById('contactName').value,
+    contactEmail: document.getElementById('contactEmail').value,
+    contactTel: document.getElementById('contactTel').value,
+    appointmentDate: appointmentDate,
+    appointmentTime: appointmentTime
+  };
+
+  try {
+    // ITT A VÁLTOZÁS: relatív URL-t használunk
+    const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData)
+    });
+
+    if (response.ok) {
+        alert("Időpont sikeresen lefoglalva!");
+        closePortal();
+        renderWeek(currentMonday);
+    } else {
+        const error = await response.json();
+        alert("Hiba a foglalás során: " + error.error);
+    }
+  } catch (err) {
+      console.error("❌ Hiba a foglalás mentésekor:", err);
+      alert("Sikertelen foglalás. Ellenőrizd a szerver kapcsolatot!");
+  }
+});
+
 // ⏮⏭ NAVIGÁCIÓ A HETEKBEN
-document.getElementById("prevWeek").addEventListener("click", () => {
+prevWeekBtn.addEventListener("click", () => {
   currentMonday.setDate(currentMonday.getDate() - 7);
   renderWeek(currentMonday);
 });
 
-document.getElementById("nextWeek").addEventListener("click", () => {
+nextWeekBtn.addEventListener("click", () => {
   currentMonday.setDate(currentMonday.getDate() + 7);
   renderWeek(currentMonday);
 });
 
-// 🚀 KEZDÉS
+// Indítás
 renderWeek(currentMonday);
-
-// Bezárás ESC billentyűre vagy háttérkattintásra
-document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape") {
-    closePortal();
-  }
-});
-
-function closePortal() {
-  document.getElementById("portal").style.display = "none";
-  document.getElementById("addEventDialogBox").style.display = "none";
-}
-
-document.getElementById("portal").addEventListener("click", function (e) {
-  if (e.target.id === "portal") {
-    closePortal();
-  }
-});
-
-
