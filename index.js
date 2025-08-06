@@ -35,7 +35,7 @@ async function renderWeek(startDate) {
   // Lekérdezzük a foglalásokat a szerverről
   let bookings = [];
   try {
-    const res = await fetch("http://localhost:3000/bookings");
+    const res = await fetch("https://booktime-q4q9.onrender.com");
     bookings = await res.json();
   } catch (err) {
     console.error("Nem sikerült lekérni a foglalásokat:", err);
