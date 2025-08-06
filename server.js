@@ -10,7 +10,7 @@ const port = 3000;
 // PostgreSQL kapcsolat
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:postgresql://booktime_user:DNfK97CGxwvmFEFn5FtAZM9nqOsutVuf@dpg-d2925lpr0fns73evikc0-a/booktime {
+  ssl: {
       rejectUnauthorized: false
   }
 });
@@ -57,3 +57,4 @@ app.post('/book', async (req, res) => {
 app.listen(port, () => {
   console.log(`✅ Szerver fut: http://localhost:${port}`);
 });
+
