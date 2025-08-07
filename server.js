@@ -5,7 +5,7 @@ const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
-const port = process.env.PORT || 3000; // EZ A JAVÍTOTT RÉSZ
+const port = process.env.PORT || 3000;
 
 // PostgreSQL kapcsolat
 const pool = new Pool({
@@ -17,6 +17,7 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(bodyParser.json());
+// A statikus fájlok (HTML, CSS, JS) kiszolgálása a gyökérkönyvtárból
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
